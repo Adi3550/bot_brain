@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BotBrain - Campus Navigator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+  <style>
+    #map { height: 400px; width: 100%; margin-bottom: 20px; }
+    .leaflet-container { background: #f8f9fa; }
+    .user-marker { position: relative; z-index: 1000; }
+    #chatPanel { z-index: 1001; }
+    .typing-indicator { display: flex; align-items: center; gap: 4px; }
+    .typing-dot { width: 8px; height: 8px; background-color: #6b7280; border-radius: 50%; animation: typing 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <div class="container mx-auto p-4 relative">
+    <h1 class="text-3xl font-bold text-center mb-6">BotBrain - Campus Navigator</h1>
+
+    <!-- Chatbot Panel (Top-right) -->
+    <div id="chatPanel" class="fixed top-4 right-4 w-80 bg-white p-4 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-2 text-gray-800">BotBrain Assistant</h2>
+      <div id="chatBox" class="h-48 overflow-y-auto border p-2 mb-2 bg-gray-50 rounded">
+        <!-- Messages will be appended here -->
+      </div>
+      <div id="typingIndicator" class="typing-indicator hidden mb-2"></div>
+      <input id="chatInput" type="text" placeholder="Ask me about paths or campus info (e.g., 'Path from Main Gate to Library')" class="w-full p-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+      <button id="sendChat" class="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 transition duration-200">Send</button>
+    </div>
+
+    <!-- Navigation Panel -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h2 class="text-xl font-semibold mb-4">Find Your Path</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="start" class="block text-sm font-medium text-gray-700">Start Location:</label>
+          <select id="start" class="mt-1 block w-full p-2 border rounded" onchange="updatePath()">
+            <option value="">Select Start</option>
+          </select>
+        </div>
+        <div>
+          <label for="end" class="block text-sm font-medium text-gray-700">End Location:</label>
+          <select id="end" class="mt-1 block w-full p-2 border rounded" onchange="updatePath()">
+            <option value="">Select End</option>
+          </select>
+        </div>
+        <div>
+          <label for="algorithm" class="block text-sm font-medium text-gray-700">Algorithm:</label>
+          <select id="algorithm" class="mt-1 block w-full p-2 border rounded">
+            <option value="">Select Algorithm</option>
+            <option value="Automatic">Automatic (Compare & Best Path)</option>
+            <option value="BFS">BFS (Breadth-First Search)</option>
+            <option value="DFS">DFS (Depth-First Search)</option>
+            <option value="UCS">UCS (Uniform Cost Search)</option>
+            <option value="A*">A* (A-Star Search)</option>
+          </select>
+        </div>
+        <button id="findPath" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600" onclick="showDetailedResults()">Find Path</button>
+      </div>
+    </div>
+
+    <!-- Map Panel -->
+    <div id="map" class="bg-white rounded-lg shadow-md mb-6"></div>
+
+    <!-- Results Panel -->
+    <div id="results" class="bg-white p-6 rounded-lg shadow-md mb-6 hidden">
+      <h2 class="text-xl font-semibold mb-4">Path Results</h2>
+      <div id="pathDetails" class="space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+  <script>
+    const backendUrl = 'http://127.0.0.1:5000';
+    let map;
+    let markers = {};
+    let polyline = null;
+    let userMarker = null;
+    let userCircle = null;
+    let zoomed = false;
+
+    const defaultIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    const greenIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    const redIcon = L.icon({
+      iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // Initialize map centered on Main Gate
+    function initMap() {
+      map = L.map('map').setView([0, 0], 10); // Centered at origin, zoomed out initially
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+    }
+
+    // Add markers for all campus locations
+    async function addLocationMarkers() {
+      try {
+        const response = await fetch(`${backendUrl}/locations`);
+        const locations = await response.json();
+        const campusCoords = {
+          'Main Gate': [0, 0],
+          'Admin Block': [0, -160],
+          'Library': [60, -160],
+          'Connecting Point': [0, -220],
+          'Academic Block A': [-60, -220],
+          'Academic Block C': [60, -220],
+          'Academic Block B': [0, -280],
+          'Foodcourt': [0, -460],
+          'Hostel': [-70, -460],
+          'Laundry': [-290, -460],
+          'Sports Arena': [220, -460],
+          'Cricket Ground': [630, -460],
+          'Volleyball Court': [-70, -960]
+        };
+        locations.forEach(loc => {
+          if (campusCoords[loc]) {
+            markers[loc] = L.marker(campusCoords[loc], { icon: defaultIcon }).addTo(map)
+              .bindPopup(loc)
+              .on('mouseover', function (e) { this.openPopup(); })
+              .on('mouseout', function (e) { this.closePopup(); });
+          }
+        });
+      } catch (error) {
+        console.error("Error adding location markers:", error);
+        alert("Failed to load location markers. Check backend connection.");
+        Object.keys(campusCoords).forEach(loc => {
+          if (!markers[loc]) {
+            markers[loc] = L.marker(campusCoords[loc], { icon: defaultIcon }).addTo(map)
+              .bindPopup(loc)
+              .on('mouseover', function (e) { this.openPopup(); })
+              .on('mouseout', function (e) { this.closePopup(); });
+          }
+        });
+      }
+    }
+
+    // Handle geolocation success
+    function success(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = pos.coords.accuracy;
+
+      if (userMarker) map.removeLayer(userMarker);
+      if (userCircle) map.removeLayer(userCircle);
+
+      userMarker = L.marker([lat, lng], { icon: L.divIcon({ className: 'user-marker', html: '<div style="background-color: blue; width: 10px; height: 10px; border-radius: 50%;"></div>' }) }).addTo(map)
+        .bindPopup('Your Location');
+      userCircle = L.circle([lat, lng], { radius: accuracy, color: 'blue', fillOpacity: 0.2 }).addTo(map);
+
+      if (!zoomed) {
+        map.fitBounds(userCircle.getBounds());
+        zoomed = true;
+      } else {
+        map.panTo([lat, lng]);
+      }
+    }
+
+    // Handle geolocation error
+    function error(err) {
+      console.warn("Geolocation error:", err);
+      if (err.code === 1) {
+        alert("Please allow geolocation access to use this feature.");
+      } else {
+        alert("Cannot get current location. Using default map view.");
+      }
+    }
+
+    // Start geolocation watch with options
+    function startGeolocation() {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(success, error, {
+          enableHighAccuracy: true,
+          maximumAge: 30000,
+          timeout: 27000
+        });
+      } else {
+        alert("Geolocation is not supported by your browser.");
+      }
+    }
+
+    // Populate dropdowns from backend
+    async function populateDropdowns() {
+      try {
+        const response = await fetch(`${backendUrl}/locations`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const locations = await response.json();
+        const startSelect = document.getElementById("start");
+        const endSelect = document.getElementById("end");
+        locations.forEach(loc => {
+          const option1 = document.createElement("option");
+          option1.value = loc;
+          option1.text = loc;
+          startSelect.appendChild(option1);
+          const option2 = document.createElement("option");
+          option2.value = loc;
+          option2.text = loc;
+          endSelect.appendChild(option2);
+        });
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+        alert("Failed to load locations. Check if backend is running at http://127.0.0.1:5000.");
+        const fallbackLocations = Object.keys({
+          'Main Gate': [0, 0],
+          'Admin Block': [0, 0],
+          'Library': [0, 0],
+          'Hostel': [0, 0]
+        });
+        const startSelect = document.getElementById("start");
+        const endSelect = document.getElementById("end");
+        fallbackLocations.forEach(loc => {
+          const option1 = document.createElement("option");
+          option1.value = loc;
+          option1.text = loc;
+          startSelect.appendChild(option1);
+          const option2 = document.createElement("option");
+          option2.value = loc;
+          option2.text = loc;
+          endSelect.appendChild(option2);
+        });
+      }
+    }
+
+    // Function to capitalize location names
+    function capitalizeLocation(str) {
+      return str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+    }
+
+    // Reset all markers to default icon
+    function resetMarkers() {
+      for (let key in markers) {
+        if (markers[key]) markers[key].setIcon(defaultIcon);
+      }
+    }
+
+    // Update path on map when start or end changes
+    async function updatePath() {
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
+      const algorithm = document.getElementById("algorithm").value || 'A*';
+
+      if (!start || !end) {
+        if (polyline) {
+          map.removeLayer(polyline);
+          polyline = null;
+        }
+        resetMarkers();
+        return;
+      }
+
+      resetMarkers();
+      if (polyline) {
+        map.removeLayer(polyline);
+        polyline = null;
+      }
+
+      try {
+        const response = await fetch(`${backendUrl}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(end)}&algo=${encodeURIComponent(algorithm)}`);
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        const result = await response.json();
+
+        if (result.error) {
+          console.error(result.error);
+        } else {
+          displayPathOnMap(result.path);
+          if (markers[start]) markers[start].setIcon(greenIcon);
+          if (markers[end]) markers[end].setIcon(redIcon);
+          setTimeout(() => {
+            if (markers[start]) markers[start].setIcon(defaultIcon);
+            if (markers[end]) markers[end].setIcon(defaultIcon);
+          }, 2000);
+        }
+      } catch (error) {
+        console.error("Error fetching path:", error);
+      }
+    }
+
+    // Function to display path on map
+    function displayPathOnMap(path) {
+      const campusCoords = {
+        'Main Gate': [0, 0],
+        'Admin Block': [0, -160],
+        'Library': [60, -160],
+        'Connecting Point': [0, -220],
+        'Academic Block A': [-60, -220],
+        'Academic Block C': [60, -220],
+        'Academic Block B': [0, -280],
+        'Foodcourt': [0, -460],
+        'Hostel': [-70, -460],
+        'Laundry': [-290, -460],
+        'Sports Arena': [220, -460],
+        'Cricket Ground': [630, -460],
+        'Volleyball Court': [-70, -960]
+      };
+      const pathCoords = path.map(loc => campusCoords[loc]).filter(coord => coord);
+      if (pathCoords.length > 0) {
+        if (polyline) map.removeLayer(polyline);
+        polyline = L.polyline(pathCoords, { color: 'blue' }).addTo(map);
+        map.fitBounds(polyline.getBounds());
+      }
+    }
+
+    // Show detailed results on button click
+    function showDetailedResults() {
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
+      const algorithm = document.getElementById("algorithm").value;
+      const results = document.getElementById("results");
+      const pathDetails = document.getElementById("pathDetails");
+
+      if (!start || !end || !algorithm) {
+        alert("Please select start, end, and algorithm!");
+        return;
+      }
+
+      results.classList.remove("hidden");
+      pathDetails.innerHTML = '<p>Loading...</p>';
+
+      try {
+        if (algorithm === 'Automatic') {
+          const algos = ['BFS', 'DFS', 'UCS', 'A*'];
+          const allResults = [];
+          let minDistance = Infinity;
+          let bestResult = null;
+          let bestAlgo = '';
+
+          for (let algo of algos) {
+            const response = await fetch(`${backendUrl}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(end)}&algo=${encodeURIComponent(algo)}`);
+            if (!response.ok) throw new Error(`Fetch failed for ${algo}: ${response.status}`);
+            const result = await response.json();
+            if (!result.error && result.distance < minDistance) {
+              minDistance = result.distance;
+              bestResult = result;
+              bestAlgo = algo;
+            }
+            allResults.push({ algo, result });
+          }
+
+          if (bestResult) {
+            pathDetails.innerHTML = `
+              <p><strong>Best Algorithm:</strong> ${bestAlgo}</p>
+              <p><strong>Steps:</strong></p>
+              <ul>${bestResult.steps.map(step => `<li>${step}</li>`).join("")}</ul>
+              <p><strong>Path:</strong> ${bestResult.path.join(" -> ")}</p>
+              <p><strong>Distance:</strong> ${bestResult.distance} meters</p>
+              <p><strong>Walking Time:</strong> ${bestResult.walking_time} minutes</p>
+              <p><strong>Nodes Explored:</strong> ${bestResult.nodes_explored}</p>
+              <h3 class="text-lg font-semibold mt-4">Algorithm Comparison</h3>
+              <table class="w-full border-collapse border">
+                <thead>
+                  <tr>
+                    <th class="border p-2">Algorithm</th>
+                    <th class="border p-2">Distance (m)</th>
+                    <th class="border p-2">Time (min)</th>
+                    <th class="border p-2">Nodes Explored</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${allResults.map(({ algo, result }) => `
+                    <tr>
+                      <td class="border p-2">${algo}</td>
+                      <td class="border p-2">${result.error ? 'Error' : result.distance}</td>
+                      <td class="border p-2">${result.error ? 'Error' : result.walking_time}</td>
+                      <td class="border p-2">${result.error ? 'Error' : result.nodes_explored}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            `;
+          } else {
+            pathDetails.innerHTML = `<p>No valid paths found.</p>`;
+          }
+        } else {
+          const response = await fetch(`${backendUrl}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(end)}&algo=${encodeURIComponent(algorithm)}`);
+          if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+          const result = await response.json();
+
+          if (result.error) {
+            pathDetails.innerHTML = `<p>${result.error}</p>`;
+          } else {
+            pathDetails.innerHTML = `
+              <p><strong>Algorithm:</strong> ${algorithm}</p>
+              <p><strong>Steps:</strong></p>
+              <ul>${result.steps.map(step => `<li>${step}</li>`).join("")}</ul>
+              <p><strong>Path:</strong> ${result.path.join(" -> ")}</p>
+              <p><strong>Distance:</strong> ${result.distance} meters</p>
+              <p><strong>Walking Time:</strong> ${result.walking_time} minutes</p>
+              <p><strong>Nodes Explored:</strong> ${result.nodes_explored}</p>
+            `;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching path:", error);
+        pathDetails.innerHTML = `<p>Failed to connect to backend. Ensure it's running at ${backendUrl}. Error: ${error.message}</p>`;
+      }
+    }
+
+    // Chatbot Logic
+    const chatBox = document.getElementById("chatBox");
+    const typingIndicator = document.getElementById("typingIndicator");
+    function addMessage(sender, message) {
+      chatBox.innerHTML += `<div class="mb-2 ${sender === 'user' ? 'text-right' : 'text-left'}">
+        <span class="p-2 rounded ${sender === 'user' ? 'bg-blue-200' : 'bg-gray-200'} text-gray-800">${message}</span>
+      </div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function showTyping() {
+      typingIndicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+      typingIndicator.classList.remove('hidden');
+    }
+
+    function hideTyping() {
+      typingIndicator.classList.add('hidden');
+      typingIndicator.innerHTML = '';
+    }
+
+    document.getElementById("sendChat").addEventListener("click", async () => {
+      const message = document.getElementById("chatInput").value.trim();
+      if (!message) return;
+
+      addMessage("user", message);
+      document.getElementById("chatInput").value = "";
+      showTyping();
+
+      const input = message.toLowerCase();
+      let response = "Hmm, I’m not sure I follow! Try asking about paths (e.g., 'Path from Main Gate to Library') or campus info.";
+
+      const bestMatch = input.match(/find best path from ([\w\s]+) to ([\w\s]+)/);
+      const pathMatch = input.match(/find path (?:using (\w+)\s*)?from ([\w\s]+) to ([\w\s]+)/);
+      const infoMatch = input.match(/(info about|what are\s+([\w\s]+)\s+timings?)/);
+      const helpMatch = input.includes("help");
+
+      if (bestMatch || pathMatch) {
+        let algo = 'Automatic';
+        let start, end;
+        if (bestMatch) {
+          [, start, end] = bestMatch;
+        } else if (pathMatch) {
+          [, algo, start, end] = pathMatch;
+          algo = algo ? algo.toUpperCase() : 'Automatic';
+          if (!['BFS', 'DFS', 'UCS', 'A*'].includes(algo)) algo = 'Automatic';
+        }
+        start = capitalizeLocation(start.trim());
+        end = capitalizeLocation(end.trim());
+
+        addMessage("bot", `Let me find the best route from ${start} to ${end}...`);
+        resetMarkers();
+        if (polyline) map.removeLayer(polyline);
+
+        try {
+          if (algo === 'Automatic') {
+            const algos = ['BFS', 'DFS', 'UCS', 'A*'];
+            const allResults = [];
+            let minDistance = Infinity;
+            let bestResult = null;
+            let bestAlgo = '';
+
+            for (let a of algos) {
+              const fetchResponse = await fetch(`${backendUrl}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(end)}&algo=${encodeURIComponent(a)}`);
+              if (!fetchResponse.ok) throw new Error(`Fetch failed for ${a}: ${fetchResponse.status}`);
+              const result = await fetchResponse.json();
+              if (!result.error && result.distance < minDistance) {
+                minDistance = result.distance;
+                bestResult = result;
+                bestAlgo = a;
+              }
+              allResults.push({ algo: a, result });
+            }
+
+            if (bestResult) {
+              displayPathOnMap(bestResult.path);
+              response = `Here’s the best route with ${bestAlgo}: ${bestResult.path.join(" -> ")}. It’s ${bestResult.distance} meters, taking about ${bestResult.walking_time} minutes. Want more details?`;
+            } else {
+              response = `Sorry, I couldn’t find a path from ${start} to ${end}.`;
+            }
+          } else {
+            const fetchResponse = await fetch(`${backendUrl}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(end)}&algo=${encodeURIComponent(algo)}`);
+            if (!fetchResponse.ok) throw new Error(`Fetch failed: ${fetchResponse.status}`);
+            const result = await fetchResponse.json();
+            if (result.error) {
+              response = result.error;
+            } else {
+              displayPathOnMap(result.path);
+              response = `Here’s your route with ${algo}: ${result.path.join(" -> ")}. It’s ${result.distance} meters, about ${result.walking_time} minutes, exploring ${result.nodes_explored} nodes.`;
+            }
+          }
+        } catch (error) {
+          console.error("Chatbot fetch error:", error);
+          response = `Oops, I hit a snag! Please check the backend connection.`;
+        }
+      } else if (infoMatch) {
+        let building = infoMatch[2] ? capitalizeLocation(infoMatch[2].trim()) : null;
+        if (building) {
+          addMessage("bot", `Looking up info for ${building}...`);
+          try {
+            const responseData = await fetch(`${backendUrl}/building_info?building=${encodeURIComponent(building)}`);
+            if (!responseData.ok) throw new Error(`Fetch failed: ${responseData.status}`);
+            const info = await responseData.json();
+            if (info.error) {
+              response = info.error;
+            } else {
+              response = `${building} Details: Opens ${info.hours || 'N/A'}, Services: ${info.services || 'N/A'}. Anything else you’d like to know?`;
+            }
+          } catch (error) {
+            console.error("Error fetching building info:", error);
+            response = `Couldn’t fetch details for ${building}. Try again later!`;
+          }
+        } else {
+          response = `Please tell me a building (e.g., 'Info about Library').`;
+        }
+      } else if (helpMatch) {
+        response = `I’m here to help! Ask for paths (e.g., 'Path from Main Gate to Library') or info (e.g., 'Info about Hostel'). Use algorithms like BFS, DFS, UCS, or A* with 'using' if you like!`;
+      }
+
+      setTimeout(() => {
+        hideTyping();
+        addMessage("bot", response);
+      }, 1000); // Simulate thinking delay
+    });
+
+    // Initialize
+    initMap();
+    addLocationMarkers();
+    populateDropdowns();
+    startGeolocation();
+  </script>
+</body>
+</html>
