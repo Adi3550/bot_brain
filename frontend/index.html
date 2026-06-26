@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotBrain - Campus Navigator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        darkPanel: '#1e293b',
+                        darkAccent: '#38bdf8'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-darkBg text-slate-200 h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- Navbar -->
+    <header class="bg-darkPanel border-b border-slate-700 p-4 flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <svg class="w-8 h-8 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+            <h1 class="text-xl font-bold tracking-wide">BotBrain <span class="text-sm font-normal text-slate-400">Campus Navigator</span></h1>
+        </div>
+        <div class="flex gap-4">
+            <a href="https://github.com/Adi3550/bot_brain" target="_blank" class="text-slate-400 hover:text-white transition">GitHub</a>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside class="w-full md:w-96 bg-darkPanel flex flex-col border-r border-slate-700 shrink-0 overflow-y-auto">
+            
+            <!-- Pathfinding Section -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><svg class="w-5 h-5 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> Find a Path</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Start Location</label>
+                        <select id="startNode" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Destination</label>
+                        <select id="goalNode" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Algorithm</label>
+                        <select id="algorithm" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent">
+                            <option value="A*">A* (A-Star)</option>
+                            <option value="UCS">UCS (Uniform Cost)</option>
+                            <option value="BFS">BFS (Breadth-First)</option>
+                            <option value="DFS">DFS (Depth-First)</option>
+                        </select>
+                    </div>
+                    <button onclick="findPath()" class="w-full bg-darkAccent hover:bg-sky-500 text-slate-900 font-bold py-2 rounded transition mt-2">Navigate</button>
+                </div>
+            </div>
+
+            <!-- Algorithm Stats & Chart -->
+            <div class="p-4 border-b border-slate-700 hidden" id="statsContainer">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Algorithm Comparison</h3>
+                <canvas id="algoChart" height="150"></canvas>
+            </div>
+
+            <!-- AI Chatbot Section -->
+            <div class="flex-1 flex flex-col min-h-[300px]">
+                <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                    <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg> AI Assistant</h2>
+                </div>
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Messages will be injected here -->
+                    <div class="flex items-start gap-2">
+                        <div class="bg-slate-700 text-sm p-3 rounded-lg rounded-tl-none max-w-[85%] text-slate-200">
+                            Hi! I'm BotBrain, your AI campus guide. Ask me about buildings, events, or directions!
+                            <div class="text-[10px] text-slate-400 mt-1 text-right">Now</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 border-t border-slate-700 bg-darkPanel">
+                    <form id="chatForm" class="flex gap-2" onsubmit="handleChatSubmit(event)">
+                        <input type="text" id="chatInput" placeholder="Ask something..." class="flex-1 bg-slate-800 border border-slate-600 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-darkAccent" autocomplete="off">
+                        <button type="submit" class="bg-darkAccent hover:bg-sky-500 text-slate-900 rounded-full p-2 w-10 h-10 flex items-center justify-center transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Map Area -->
+        <section class="flex-1 flex flex-col relative h-[50vh] md:h-auto">
+            <div id="map" class="flex-1 z-0"></div>
+            
+            <!-- Turn-by-Turn Directions Floating Panel -->
+            <div id="directionsPanel" class="hidden absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4 shadow-2xl z-10 max-h-48 overflow-y-auto">
+                <h3 class="text-sm font-bold text-darkAccent mb-2 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg> Turn-by-Turn Directions</h3>
+                <ul id="directionsList" class="space-y-2 text-sm text-slate-300">
+                    <!-- Directions injected here -->
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Update this URL to your Render backend URL once deployed!
+        const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? 'http://127.0.0.1:5000' : 'https://bot-brain.onrender.com';
+        
+        let map;
+        let markers = {};
+        let currentPolyline = null;
+        let chartInstance = null;
+        let buildingInfo = {};
+
+        // Initialize Map
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false // Move zoom control to bottom right
+            }).setView([28.61, 77.21], 15);
+            
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Using CartoDB Dark Matter tiles for modern dark theme
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            fetchLocations();
+        }
+
+        async function fetchLocations() {
+            try {
+                const res = await fetch(`${API_BASE}/locations`);
+                const data = await res.json();
+                const coords = data.coordinates;
+                buildingInfo = data.building_info;
+                
+                const startSelect = document.getElementById('startNode');
+                const goalSelect = document.getElementById('goalNode');
+                
+                // Fetch events to combine with building info
+                let events = {};
+                try {
+                    const evtRes = await fetch(`${API_BASE}/events`);
+                    events = await evtRes.json();
+                } catch (e) { console.error("Could not fetch events"); }
+
+                data.nodes.forEach(node => {
+                    // Populate selects
+                    startSelect.add(new Option(node, node));
+                    goalSelect.add(new Option(node, node));
+                    
+                    // Add markers
+                    if (coords[node]) {
+                        const [lat, lng] = coords[node];
+                        const info = buildingInfo[node] || {};
+                        const evt = events[node] ? `<div class="mt-2 text-xs text-amber-400 bg-amber-400/10 p-1 rounded font-semibold flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg> ${events[node]}</div>` : '';
+                        
+                        const popupContent = `
+                            <div class="p-1">
+                                <h3 class="font-bold text-darkAccent text-base mb-1">${node}</h3>
+                                <p class="text-xs text-slate-300 mb-1"><span class="font-semibold">Type:</span> ${info.type}</p>
+                                <p class="text-xs text-slate-300 mb-1"><span class="font-semibold">Hours:</span> ${info.hours}</p>
+                                <p class="text-xs text-slate-300">${info.services}</p>
+                                ${evt}
+                            </div>
+                        `;
+                        
+                        const marker = L.marker([lat, lng]).bindPopup(popupContent);
+                        marker.addTo(map);
+                        markers[node] = marker;
+                    }
+                });
+                
+                // Fit bounds
+                const group = new L.featureGroup(Object.values(markers));
+                map.fitBounds(group.getBounds().pad(0.1));
+
+            } catch (error) {
+                console.error("Error fetching locations:", error);
+                appendChatMessage("System", "Failed to connect to backend. Make sure it's running!", true);
+            }
+        }
+
+        async function findPath() {
+            const start = document.getElementById('startNode').value;
+            const goal = document.getElementById('goalNode').value;
+            const algo = document.getElementById('algorithm').value;
+            
+            if (start === goal) {
+                alert("Start and destination cannot be the same!");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(goal)}&algo=${algo}`);
+                const data = await res.json();
+                
+                if (data.error) throw new Error(data.error);
+
+                drawPath(data.path);
+                showDirections(data);
+                updateChart(start, goal); // Fetch all algos for comparison
+                
+                appendChatMessage("BotBrain", `I found a path using ${algo}! Distance: ${data.distance}m. Walking time: ${data.walking_time} mins.`);
+
+            } catch (error) {
+                console.error("Path error:", error);
+                alert(error.message);
+            }
+        }
+
+        function drawPath(pathNodes) {
+            if (currentPolyline) map.removeLayer(currentPolyline);
+            
+            const latlngs = pathNodes.map(node => markers[node].getLatLng());
+            
+            // Create animated polyline
+            currentPolyline = L.polyline(latlngs, {
+                color: '#38bdf8',
+                weight: 4,
+                className: 'animated-path'
+            }).addTo(map);
+            
+            map.fitBounds(currentPolyline.getBounds().pad(0.2));
+            
+            // Open popup of destination
+            markers[pathNodes[pathNodes.length-1]].openPopup();
+        }
+
+        function showDirections(data) {
+            const panel = document.getElementById('directionsPanel');
+            const list = document.getElementById('directionsList');
+            panel.classList.remove('hidden');
+            list.innerHTML = '';
+            
+            data.directions.forEach((dir, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `
+                    <div class="mt-0.5 bg-slate-800 p-1 rounded-full text-darkAccent shrink-0">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </div>
+                    <span>${dir}</span>
+                `;
+                list.appendChild(li);
+            });
+            
+            const summary = document.createElement('li');
+            summary.className = 'mt-2 pt-2 border-t border-slate-700 font-semibold text-darkAccent';
+            summary.innerHTML = `Arrived at destination (${data.distance}m total)`;
+            list.appendChild(summary);
+        }
+
+        async function updateChart(start, goal) {
+            document.getElementById('statsContainer').classList.remove('hidden');
+            
+            // Fetch all algorithms to compare
+            const algos = ['BFS', 'DFS', 'UCS', 'A*'];
+            const nodesExplored = [];
+            
+            for (let algo of algos) {
+                const res = await fetch(`${API_BASE}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(goal)}&algo=${algo}`);
+                const data = await res.json();
+                nodesExplored.push(data.nodes_explored || 0);
+            }
+            
+            const ctx = document.getElementById('algoChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: algos,
+                    datasets: [{
+                        label: 'Nodes Explored',
+                        data: nodesExplored,
+                        backgroundColor: ['#94a3b8', '#94a3b8', '#94a3b8', '#38bdf8'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // Chat UI
+        function appendChatMessage(sender, text, isError = false) {
+            const chatBox = document.getElementById('chatMessages');
+            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const isUser = sender === 'You';
+            const wrapperClass = isUser ? 'flex items-end justify-end gap-2' : 'flex items-start gap-2';
+            const bubbleClass = isUser 
+                ? 'bg-darkAccent text-slate-900 rounded-lg rounded-tr-none' 
+                : (isError ? 'bg-red-900/50 text-red-200 border border-red-700 rounded-lg rounded-tl-none' : 'bg-slate-700 text-slate-200 rounded-lg rounded-tl-none');
+            
+            const html = `
+                <div class="${wrapperClass}">
+                    <div class="text-sm p-3 max-w-[85%] shadow-sm ${bubbleClass}">
+                        ${text}
+                        <div class="text-[10px] opacity-70 mt-1 ${isUser ? 'text-right text-slate-800' : 'text-right text-slate-400'}">${time}</div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const chatBox = document.getElementById('chatMessages');
+            const html = `
+                <div class="flex items-start gap-2" id="typingIndicator">
+                    <div class="bg-slate-700 rounded-lg rounded-tl-none typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            
+            input.value = '';
+            appendChatMessage('You', message);
+            showTypingIndicator();
+            
+            try {
+                const res = await fetch(`${API_BASE}/chatbot`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                hideTypingIndicator();
+                appendChatMessage('BotBrain', data.reply);
+            } catch (err) {
+                hideTypingIndicator();
+                appendChatMessage('System', 'Failed to reach AI server.', true);
+            }
+        }
+
+        // Init
+        window.onload = initMap;
+    </script>
+</body>
+</html>
