@@ -65,13 +65,8 @@
                         </select>
                     </div>
                     <button onclick="findPath()" class="w-full bg-darkAccent hover:bg-sky-500 text-slate-900 font-bold py-2 rounded transition mt-2">Navigate</button>
+                    <button onclick="document.getElementById('chartModal').classList.remove('hidden')" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 rounded transition mt-2 text-sm border border-slate-600" id="viewStatsBtn">📊 View Algorithm Comparison</button>
                 </div>
-            </div>
-
-            <!-- Algorithm Stats & Chart -->
-            <div class="p-4 border-b border-slate-700 hidden" id="statsContainer">
-                <h3 class="text-sm font-semibold mb-2 text-slate-300">Algorithm Comparison</h3>
-                <canvas id="algoChart" height="150"></canvas>
             </div>
 
             <!-- AI Chatbot Section -->
@@ -113,6 +108,19 @@
         </section>
     </main>
 
+    <!-- Modal for Chart -->
+    <div id="chartModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-darkPanel border border-slate-700 rounded-xl p-4 w-full max-w-2xl relative shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-white">Algorithm Performance (Nodes Explored)</h3>
+                <button onclick="document.getElementById('chartModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+            <div class="w-full bg-slate-800 rounded p-4">
+                <canvas id="algoChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Updated to your live Render backend URL!
         const API_BASE = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? 'http://127.0.0.1:5000' : 'https://bot-brain-5riz.onrender.com';
@@ -126,8 +134,8 @@
         // Initialize Map
         function initMap() {
             map = L.map('map', {
-                zoomControl: false // Move zoom control to bottom right
-            }).setView([28.61, 77.21], 15);
+                zoomControl: false 
+            }).setView([13.2246, 77.7578], 15);
             
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -266,7 +274,7 @@
         }
 
         async function updateChart(start, goal) {
-            document.getElementById('statsContainer').classList.remove('hidden');
+            document.getElementById('viewStatsBtn').classList.remove('hidden');
             
             // Fetch all algorithms to compare
             const algos = ['BFS', 'DFS', 'UCS', 'A*'];

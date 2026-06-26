@@ -36,8 +36,8 @@ graph = {
     "Auditorium": {"Main Hostel": 500}
 }
 
-base_lat = 28.6139
-base_lng = 77.2090
+base_lat = 13.2246
+base_lng = 77.7578
 coordinates = {
     "Main Gate": (base_lat, base_lng),
     "Admin Block": (base_lat - 0.00160, base_lng),
