@@ -36,20 +36,18 @@ graph = {
     "Sports Ground": {"Canteen": 510}
 }
 
-base_lat = 13.2246
-base_lng = 77.7578
 coordinates = {
-    "Main Gate": (base_lat - 0.0020, base_lng - 0.0025),
-    "Admin Block": (base_lat + 0.0005, base_lng - 0.0015),
-    "Library": (base_lat + 0.0006, base_lng - 0.0015),
-    "Auditorium": (base_lat + 0.0004, base_lng - 0.0015),
-    "Academic Block B": (base_lat + 0.0010, base_lng - 0.0040),
-    "Academic Block C": (base_lat + 0.0015, base_lng + 0.0015),
-    "Academic Block D": (base_lat - 0.0010, base_lng + 0.0020),
-    "Canteen": (base_lat + 0.0025, base_lng + 0.0010),
-    "Medical Center": (base_lat + 0.0026, base_lng + 0.0010),
-    "Main Hostel": (base_lat + 0.0020, base_lng + 0.0025),
-    "Sports Ground": (base_lat + 0.0050, base_lng - 0.0010)
+    "Main Gate": (13.221371, 77.755112),
+    "Admin Block": (13.222201, 77.755277),
+    "Library": (13.221823, 77.755435),
+    "Auditorium": (13.222017, 77.755388),
+    "Academic Block B": (13.223147, 77.754911),
+    "Academic Block C": (13.223345, 77.755969),
+    "Academic Block D": (13.222556, 77.756232),
+    "Canteen": (13.224877, 77.757148),
+    "Medical Center": (13.224494, 77.757009),
+    "Main Hostel": (13.224525, 77.758944),
+    "Sports Ground": (13.228847, 77.757402)
 }
 
 building_info = {
