@@ -16,127 +16,138 @@
                 extend: {
                     colors: {
                         darkBg: '#0f172a',
-                        darkPanel: '#1e293b',
+                        darkPanel: 'rgba(30, 41, 59, 0.7)',
                         darkAccent: '#38bdf8'
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-darkBg text-slate-200 h-[100dvh] flex flex-col font-sans overflow-hidden">
+<body class="bg-slate-900 text-slate-200 h-[100dvh] w-screen overflow-hidden font-sans relative">
 
-    <!-- Navbar -->
-    <header class="bg-darkPanel border-b border-slate-700 p-4 flex justify-between items-center z-10 shrink-0">
-        <div class="flex items-center gap-3">
-            <svg class="w-8 h-8 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-            <h1 class="text-xl font-bold tracking-wide">BotBrain <span class="text-sm font-normal text-slate-400">Campus Navigator</span></h1>
-        </div>
-        <div class="flex items-center gap-4">
-            <button onclick="toggleTheme()" class="text-slate-400 hover:text-white transition" title="Toggle Day/Night Mode">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            </button>
-            <a href="https://github.com/Adi3550/bot_brain" target="_blank" class="text-slate-400 hover:text-white transition">GitHub</a>
-        </div>
-    </header>
+    <!-- Absolute Full-Screen Map -->
+    <div id="map" class="absolute inset-0 z-0"></div>
 
-    <!-- Main Layout -->
-    <main class="flex-1 flex flex-col-reverse md:flex-row overflow-hidden">
+    <!-- UI Overlay Layer -->
+    <div class="relative z-10 flex flex-col h-full pointer-events-none">
         
-        <!-- Sidebar -->
-        <aside class="w-full md:w-96 bg-darkPanel flex flex-col border-r border-slate-700 shrink-0 overflow-y-auto max-h-[50vh] md:max-h-full md:h-full">
-            
-            <!-- Pathfinding Section -->
-            <div class="p-4 border-b border-slate-700">
-                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><svg class="w-5 h-5 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> Find a Path</h2>
-                <div class="space-y-3">
-                    <div class="flex items-end gap-2">
-                        <div class="flex-1">
-                            <label class="block text-xs text-slate-400 mb-1">Start Location</label>
-                            <input type="text" id="startNode" list="locationList" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent text-white" placeholder="Search...">
-                        </div>
-                        <button onclick="swapLocations()" class="bg-slate-700 hover:bg-slate-600 p-2 rounded border border-slate-600 text-slate-300 transition shrink-0 h-[38px]" title="Swap Locations">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
-                        </button>
-                        <div class="flex-1">
-                            <label class="block text-xs text-slate-400 mb-1">Destination</label>
-                            <input type="text" id="goalNode" list="locationList" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent text-white" placeholder="Search...">
-                        </div>
-                    </div>
-                    <datalist id="locationList"></datalist>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Algorithm</label>
-                        <select id="algorithm" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm focus:outline-none focus:border-darkAccent">
-                            <option value="A*">A* (A-Star)</option>
-                            <option value="UCS">UCS (Uniform Cost)</option>
-                            <option value="BFS">BFS (Breadth-First)</option>
-                            <option value="DFS">DFS (Depth-First)</option>
-                        </select>
-                    </div>
-                    <button onclick="findPath()" class="w-full bg-darkAccent hover:bg-sky-500 text-slate-900 font-bold py-2 rounded transition mt-2">Navigate</button>
-                    <button onclick="document.getElementById('chartModal').classList.remove('hidden')" class="hidden w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-2 rounded transition mt-2 text-sm border border-slate-600" id="viewStatsBtn">📊 View Algorithm Comparison</button>
+        <!-- Navbar -->
+        <header class="bg-slate-900/60 backdrop-blur-md border-b border-white/10 p-4 flex justify-between items-center shrink-0 pointer-events-auto shadow-lg transition-all">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-darkAccent/20 rounded-lg backdrop-blur-sm shadow-[0_0_15px_rgba(56,189,248,0.2)]">
+                    <svg class="w-7 h-7 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
                 </div>
+                <h1 class="text-xl font-extrabold tracking-wide text-white">BotBrain <span class="text-sm font-normal text-slate-400">Campus</span></h1>
             </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="text-slate-300 hover:text-white transition hover:scale-110 bg-slate-800/50 p-2 rounded-full border border-white/5" title="Toggle Day/Night Mode">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </button>
+            </div>
+        </header>
 
-            <!-- AI Chatbot Section -->
-            <div class="flex-1 flex flex-col min-h-[300px]">
-                <div class="p-4 border-b border-slate-700 bg-slate-800/50">
-                    <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg> AI Assistant</h2>
-                </div>
-                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
-                    <!-- Messages will be injected here -->
-                    <div class="flex items-start gap-2">
-                        <div class="bg-slate-700 text-sm p-3 rounded-lg rounded-tl-none max-w-[85%] text-slate-200">
-                            Hi! I'm BotBrain, your AI campus guide. Ask me about buildings, events, or directions!
-                            <div class="text-[10px] text-slate-400 mt-1 text-right">Now</div>
+        <!-- Main Layout -->
+        <main class="flex-1 flex flex-col md:flex-row overflow-hidden pointer-events-none">
+            
+            <!-- Sidebar (Glassmorphic) -->
+            <aside class="w-full md:w-[400px] bg-slate-900/60 backdrop-blur-xl flex flex-col border-r border-white/10 shrink-0 pointer-events-auto h-full shadow-[20px_0_40px_-15px_rgba(0,0,0,0.5)] transition-all">
+                
+                <!-- Pathfinding Section -->
+                <div class="p-5 border-b border-white/10">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"><svg class="w-5 h-5 text-darkAccent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg> Find a Path</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1">
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1 tracking-wider uppercase">Start Location</label>
+                                <input type="text" id="startNode" list="locationList" class="w-full bg-slate-900/50 border border-white/10 rounded-lg p-2.5 text-sm focus:outline-none focus:border-darkAccent focus:ring-1 focus:ring-darkAccent text-white transition-all backdrop-blur-sm shadow-inner" placeholder="Search...">
+                            </div>
+                            <button onclick="swapLocations()" class="bg-slate-800/50 hover:bg-slate-700/80 p-2.5 rounded-lg border border-white/10 text-darkAccent transition shrink-0 h-[42px] backdrop-blur-sm hover:scale-105" title="Swap Locations">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                            </button>
+                            <div class="flex-1">
+                                <label class="block text-[11px] font-semibold text-slate-400 mb-1 tracking-wider uppercase">Destination</label>
+                                <input type="text" id="goalNode" list="locationList" class="w-full bg-slate-900/50 border border-white/10 rounded-lg p-2.5 text-sm focus:outline-none focus:border-darkAccent focus:ring-1 focus:ring-darkAccent text-white transition-all backdrop-blur-sm shadow-inner" placeholder="Search...">
+                            </div>
                         </div>
+                        <datalist id="locationList"></datalist>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1 tracking-wider uppercase">Algorithm</label>
+                            <select id="algorithm" class="w-full bg-slate-900/50 border border-white/10 rounded-lg p-2.5 text-sm focus:outline-none focus:border-darkAccent text-slate-200 backdrop-blur-sm shadow-inner">
+                                <option value="A*">A* (A-Star)</option>
+                                <option value="UCS">UCS (Uniform Cost)</option>
+                                <option value="BFS">BFS (Breadth-First)</option>
+                                <option value="DFS">DFS (Depth-First)</option>
+                            </select>
+                        </div>
+                        <button onclick="findPath()" class="w-full bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white shadow-[0_0_15px_rgba(56,189,248,0.3)] font-bold py-3 rounded-lg transition-all mt-3 transform hover:-translate-y-0.5 border border-sky-400/30">Navigate Now</button>
+                        <button onclick="document.getElementById('chartModal').classList.remove('hidden')" class="hidden w-full bg-slate-800/60 hover:bg-slate-700/80 text-slate-200 font-medium py-2.5 rounded-lg transition mt-2 text-sm border border-white/10 backdrop-blur-sm" id="viewStatsBtn">📊 View Algorithm Stats</button>
                     </div>
                 </div>
-                <div class="px-3 pt-2 pb-1 border-t border-slate-700 bg-darkPanel flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    <button onclick="sendQuickAction('What are the library hours?')" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[10px] text-slate-300 rounded-full px-3 py-1 transition shrink-0">Library Hours</button>
-                    <button onclick="sendQuickAction('Any events happening today?')" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[10px] text-slate-300 rounded-full px-3 py-1 transition shrink-0">Today's Events</button>
-                    <button onclick="sendQuickAction('Where can I get food?')" class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[10px] text-slate-300 rounded-full px-3 py-1 transition shrink-0">Food/Canteen</button>
-                </div>
-                <div class="p-3 bg-darkPanel">
-                    <form id="chatForm" class="flex gap-2" onsubmit="handleChatSubmit(event)">
-                        <input type="text" id="chatInput" placeholder="Ask something..." class="flex-1 bg-slate-800 border border-slate-600 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-darkAccent" autocomplete="off">
-                        <button type="submit" class="bg-darkAccent hover:bg-sky-500 text-slate-900 rounded-full p-2 w-10 h-10 flex items-center justify-center transition">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </aside>
 
-        <!-- Map Area -->
-        <section class="flex-1 flex flex-col relative h-[50vh] md:h-auto shrink-0 md:shrink">
-            <div id="map" class="flex-1 z-0"></div>
-            
-            <!-- Turn-by-Turn Directions Floating Panel -->
-            <div id="directionsPanel" class="hidden absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-xl bg-slate-900/90 backdrop-blur border border-slate-700 rounded-xl p-4 shadow-2xl z-10 max-h-48 overflow-y-auto">
-                <h3 class="text-sm font-bold text-darkAccent mb-2 flex items-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg> Turn-by-Turn Directions</h3>
-                <ul id="directionsList" class="space-y-2 text-sm text-slate-300">
-                    <!-- Directions injected here -->
-                </ul>
+                <!-- AI Chatbot Section -->
+                <div class="flex-1 flex flex-col min-h-[300px]">
+                    <div class="p-4 border-b border-white/5 bg-slate-900/40 backdrop-blur-md">
+                        <h2 class="text-lg font-semibold flex items-center gap-2"><svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg> AI Assistant</h2>
+                    </div>
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- Messages -->
+                        <div class="flex items-start gap-2">
+                            <div class="bg-slate-800/80 border border-white/10 text-sm p-3.5 rounded-2xl rounded-tl-sm max-w-[85%] text-slate-200 shadow-md backdrop-blur-md">
+                                Hi! I'm BotBrain, your AI campus guide. Ask me about buildings, events, or directions!
+                                <div class="text-[10px] text-slate-400 mt-1.5 text-right">Now</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="px-4 pt-3 pb-2 border-t border-white/5 bg-slate-900/40 backdrop-blur-md flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                        <button onclick="sendQuickAction('What are the library hours?')" class="bg-slate-800/80 hover:bg-slate-700 hover:text-white border border-white/10 text-[11px] font-medium text-slate-300 rounded-full px-3.5 py-1.5 transition shrink-0 shadow-sm hover:scale-105">Library Hours</button>
+                        <button onclick="sendQuickAction('Any events happening today?')" class="bg-slate-800/80 hover:bg-slate-700 hover:text-white border border-white/10 text-[11px] font-medium text-slate-300 rounded-full px-3.5 py-1.5 transition shrink-0 shadow-sm hover:scale-105">Today's Events</button>
+                        <button onclick="sendQuickAction('Where can I get food?')" class="bg-slate-800/80 hover:bg-slate-700 hover:text-white border border-white/10 text-[11px] font-medium text-slate-300 rounded-full px-3.5 py-1.5 transition shrink-0 shadow-sm hover:scale-105">Food / Canteen</button>
+                    </div>
+                    
+                    <div class="p-4 bg-slate-900/60 backdrop-blur-md border-t border-white/5">
+                        <form id="chatForm" class="flex gap-2 relative" onsubmit="handleChatSubmit(event)">
+                            <input type="text" id="chatInput" placeholder="Ask something..." class="flex-1 bg-slate-900/80 border border-white/10 rounded-full pl-5 pr-12 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white shadow-inner backdrop-blur-sm transition-all" autocomplete="off">
+                            <button type="submit" class="absolute right-1.5 top-1.5 bottom-1.5 bg-gradient-to-br from-indigo-500 to-sky-500 hover:from-indigo-400 hover:to-sky-400 text-white rounded-full w-9 flex items-center justify-center transition-all shadow-md transform hover:scale-105">
+                                <svg class="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Map Floating Overlays Layer -->
+            <div class="flex-1 relative pointer-events-none flex flex-col justify-end">
+                <!-- Turn-by-Turn Directions Floating Panel -->
+                <div id="directionsPanel" class="hidden pointer-events-auto m-4 md:m-8 self-end md:self-center w-[calc(100%-2rem)] md:w-full md:max-w-md bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-h-64 overflow-y-auto transform transition-all">
+                    <h3 class="text-sm font-bold text-sky-400 mb-3 flex items-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg> Turn-by-Turn Directions</h3>
+                    <ul id="directionsList" class="space-y-3 text-sm text-slate-200 font-medium">
+                        <!-- Directions injected here -->
+                    </ul>
+                </div>
             </div>
-        </section>
-    </main>
+            
+        </main>
+    </div>
 
     <!-- Modal for Chart -->
-    <div id="chartModal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-darkPanel border border-slate-700 rounded-xl p-4 w-full max-w-2xl relative shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-lg text-white">Algorithm Performance (Nodes Explored)</h3>
-                <button onclick="document.getElementById('chartModal').classList.add('hidden')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+    <div id="chartModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 pointer-events-auto">
+        <div class="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-2xl relative shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-xl text-white tracking-wide">Algorithm Performance</h3>
+                <button onclick="document.getElementById('chartModal').classList.add('hidden')" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition">&times;</button>
             </div>
-            <div class="w-full bg-slate-800 rounded p-4">
-                <canvas id="algoChart" height="250"></canvas>
+            <div class="w-full bg-slate-950/50 rounded-xl p-5 border border-white/5">
+                <canvas id="algoChart" height="280"></canvas>
             </div>
         </div>
     </div>
 
     <script>
-        // Now that the frontend is served by Flask, we use relative paths!
         const API_BASE = '';
         
         let map;
@@ -144,11 +155,9 @@
         let currentPolyline = null;
         let chartInstance = null;
         let buildingInfo = {};
-
         let tileLayer = null;
         let isDarkMode = true;
 
-        // Initialize Map
         function initMap() {
             map = L.map('map', {
                 zoomControl: false 
@@ -161,18 +170,13 @@
                 subdomains: ['mt0','mt1','mt2','mt3']
             }).addTo(map);
 
-            // DEV TOOL: Click on the map to copy exact coordinates!
             map.on('click', function(e) {
                 const lat = e.latlng.lat.toFixed(6);
                 const lng = e.latlng.lng.toFixed(6);
                 const coords = `${lat}, ${lng}`;
-                
-                // Copy to clipboard
                 navigator.clipboard.writeText(coords).then(() => {
                     alert(`Coordinates copied to clipboard!\n\n${coords}\n\nYou can paste these to the AI!`);
-                }).catch(err => {
-                    alert(`Coordinates: ${coords}`);
-                });
+                }).catch(err => alert(`Coordinates: ${coords}`));
             });
 
             fetchLocations();
@@ -210,15 +214,11 @@
                 const coords = data.coordinates;
                 buildingInfo = data.building_info;
                 
-                const startSelect = document.getElementById('startNode');
-                const goalSelect = document.getElementById('goalNode');
-                
-                // Fetch events to combine with building info
                 let events = {};
                 try {
                     const evtRes = await fetch(`${API_BASE}/events`);
                     events = await evtRes.json();
-                } catch (e) { console.error("Could not fetch events"); }
+                } catch (e) { }
 
                 const locationList = document.getElementById('locationList');
 
@@ -227,18 +227,19 @@
                     option.value = node;
                     locationList.appendChild(option);
                     
-                    // Add markers
                     if (coords[node]) {
                         const [lat, lng] = coords[node];
                         const info = buildingInfo[node] || {};
-                        const evt = events[node] ? `<div class="mt-2 text-xs text-amber-400 bg-amber-400/10 p-1 rounded font-semibold flex items-center gap-1"><svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg> ${events[node]}</div>` : '';
+                        const evt = events[node] ? `<div class="mt-2.5 text-xs text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 p-2 rounded-lg font-medium flex items-start gap-1.5"><svg class="w-3.5 h-3.5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path></svg> <span>${events[node]}</span></div>` : '';
                         
                         const popupContent = `
-                            <div class="p-1">
-                                <h3 class="font-bold text-darkAccent text-base mb-1">${node}</h3>
-                                <p class="text-xs text-slate-300 mb-1"><span class="font-semibold">Type:</span> ${info.type}</p>
-                                <p class="text-xs text-slate-300 mb-1"><span class="font-semibold">Hours:</span> ${info.hours}</p>
-                                <p class="text-xs text-slate-300">${info.services}</p>
+                            <div class="p-2 min-w-[200px]">
+                                <h3 class="font-bold text-sky-400 text-lg mb-2 tracking-wide">${node}</h3>
+                                <div class="space-y-1.5">
+                                    <p class="text-xs text-slate-300"><span class="font-semibold text-slate-400">Type:</span> ${info.type}</p>
+                                    <p class="text-xs text-slate-300"><span class="font-semibold text-slate-400">Hours:</span> ${info.hours}</p>
+                                    <p class="text-xs text-slate-300"><span class="font-semibold text-slate-400">Services:</span> ${info.services}</p>
+                                </div>
                                 ${evt}
                             </div>
                         `;
@@ -250,9 +251,9 @@
                         
                         const customIcon = L.divIcon({
                             className: 'custom-div-icon',
-                            html: `<div style="background-color:#1e293b; border:2px solid #38bdf8; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; font-size:16px;">${iconEmoji}</div>`,
-                            iconSize: [30, 30],
-                            iconAnchor: [15, 15]
+                            html: `<div style="background-color:rgba(15,23,42,0.8); backdrop-filter:blur(4px); border:1px solid #38bdf8; border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">${iconEmoji}</div>`,
+                            iconSize: [34, 34],
+                            iconAnchor: [17, 17]
                         });
                         
                         const marker = L.marker([lat, lng], {icon: customIcon}).bindPopup(popupContent);
@@ -261,13 +262,12 @@
                     }
                 });
                 
-                // Fit bounds
                 const group = new L.featureGroup(Object.values(markers));
                 map.fitBounds(group.getBounds().pad(0.1));
 
             } catch (error) {
                 console.error("Error fetching locations:", error);
-                appendChatMessage("System", "Failed to connect to backend. Make sure it's running!", true);
+                appendChatMessage("System", "Failed to connect to backend.", true);
             }
         }
 
@@ -284,36 +284,29 @@
             try {
                 const res = await fetch(`${API_BASE}/find_path?start=${encodeURIComponent(start)}&goal=${encodeURIComponent(goal)}&algo=${algo}`);
                 const data = await res.json();
-                
                 if (data.error) throw new Error(data.error);
 
                 drawPath(data.path);
                 showDirections(data);
-                updateChart(start, goal); // Fetch all algos for comparison
+                updateChart(start, goal);
                 
                 appendChatMessage("BotBrain", `I found a path using ${algo}! Distance: ${data.distance}m. Walking time: ${data.walking_time} mins.`);
-
             } catch (error) {
-                console.error("Path error:", error);
                 alert(error.message);
             }
         }
 
         function drawPath(pathNodes) {
             if (currentPolyline) map.removeLayer(currentPolyline);
-            
             const latlngs = pathNodes.map(node => markers[node].getLatLng());
             
-            // Create animated polyline
             currentPolyline = L.polyline(latlngs, {
                 color: '#38bdf8',
-                weight: 4,
+                weight: 5,
                 className: 'animated-path'
             }).addTo(map);
             
             map.fitBounds(currentPolyline.getBounds().pad(0.2));
-            
-            // Open popup of destination
             markers[pathNodes[pathNodes.length-1]].openPopup();
         }
 
@@ -325,10 +318,10 @@
             
             data.directions.forEach((dir, idx) => {
                 const li = document.createElement('li');
-                li.className = 'flex items-start gap-2';
+                li.className = 'flex items-center gap-3 bg-slate-800/40 p-2.5 rounded-lg border border-white/5';
                 li.innerHTML = `
-                    <div class="mt-0.5 bg-slate-800 p-1 rounded-full text-darkAccent shrink-0">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    <div class="bg-indigo-500/20 p-1.5 rounded-full text-indigo-400 shrink-0 shadow-inner">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </div>
                     <span>${dir}</span>
                 `;
@@ -336,15 +329,13 @@
             });
             
             const summary = document.createElement('li');
-            summary.className = 'mt-2 pt-2 border-t border-slate-700 font-semibold text-darkAccent';
-            summary.innerHTML = `Arrived at destination (${data.distance}m total)`;
+            summary.className = 'mt-3 pt-3 border-t border-white/10 font-bold text-sky-400 flex items-center justify-between px-1';
+            summary.innerHTML = `<span>Destination Reached</span> <span>${data.distance}m</span>`;
             list.appendChild(summary);
         }
 
         async function updateChart(start, goal) {
             document.getElementById('viewStatsBtn').classList.remove('hidden');
-            
-            // Fetch all algorithms to compare
             const algos = ['BFS', 'DFS', 'UCS', 'A*'];
             const nodesExplored = [];
             
@@ -364,8 +355,8 @@
                     datasets: [{
                         label: 'Nodes Explored',
                         data: nodesExplored,
-                        backgroundColor: ['#94a3b8', '#94a3b8', '#94a3b8', '#38bdf8'],
-                        borderRadius: 4
+                        backgroundColor: ['#475569', '#475569', '#475569', '#38bdf8'],
+                        borderRadius: 6
                     }]
                 },
                 options: {
@@ -373,29 +364,28 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: {family: 'Outfit'} } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: {family: 'Outfit', weight: 'bold'} } }
                     }
                 }
             });
         }
 
-        // Chat UI
         function appendChatMessage(sender, text, isError = false) {
             const chatBox = document.getElementById('chatMessages');
             const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            
             const isUser = sender === 'You';
             const wrapperClass = isUser ? 'flex items-end justify-end gap-2' : 'flex items-start gap-2';
+            
             const bubbleClass = isUser 
-                ? 'bg-darkAccent text-slate-900 rounded-lg rounded-tr-none' 
-                : (isError ? 'bg-red-900/50 text-red-200 border border-red-700 rounded-lg rounded-tl-none' : 'bg-slate-700 text-slate-200 rounded-lg rounded-tl-none');
+                ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-lg border border-indigo-400/50' 
+                : (isError ? 'bg-red-500/20 text-red-200 border border-red-500/30 rounded-2xl rounded-tl-sm' : 'bg-slate-800/80 border border-white/10 text-slate-200 rounded-2xl rounded-tl-sm shadow-md backdrop-blur-md');
             
             const html = `
-                <div class="${wrapperClass}">
-                    <div class="text-sm p-3 max-w-[85%] shadow-sm ${bubbleClass}">
+                <div class="${wrapperClass} animate-fade-in">
+                    <div class="text-sm p-3.5 max-w-[85%] ${bubbleClass}">
                         ${text}
-                        <div class="text-[10px] opacity-70 mt-1 ${isUser ? 'text-right text-slate-800' : 'text-right text-slate-400'}">${time}</div>
+                        <div class="text-[10px] opacity-60 mt-1.5 ${isUser ? 'text-right text-indigo-100' : 'text-right text-slate-400'}">${time}</div>
                     </div>
                 </div>
             `;
@@ -407,7 +397,7 @@
             const chatBox = document.getElementById('chatMessages');
             const html = `
                 <div class="flex items-start gap-2" id="typingIndicator">
-                    <div class="bg-slate-700 rounded-lg rounded-tl-none typing-indicator">
+                    <div class="bg-slate-800/80 border border-white/10 rounded-2xl rounded-tl-sm typing-indicator backdrop-blur-md shadow-md">
                         <div class="typing-dot"></div>
                         <div class="typing-dot"></div>
                         <div class="typing-dot"></div>
@@ -448,8 +438,11 @@
             }
         }
 
-        // Init
         window.onload = initMap;
     </script>
+    <style>
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </body>
 </html>

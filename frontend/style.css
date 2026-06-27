@@ -1,64 +1,64 @@
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
 }
-::-webkit-scrollbar-track {
-  background: #1e293b; 
-}
-::-webkit-scrollbar-thumb {
-  background: #475569; 
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #64748b; 
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 /* Typing Indicator Animation */
 .typing-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 4px;
 }
 .typing-dot {
-  width: 6px;
-  height: 6px;
-  background-color: #94a3b8;
-  border-radius: 50%;
-  animation: typingBounce 1.4s infinite ease-in-out both;
+    width: 6px;
+    height: 6px;
+    background-color: #94a3b8;
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out both;
 }
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-@keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
 }
 
-/* Animated Map Polyline */
-.animated-path {
-  stroke-dasharray: 10, 10;
-  animation: dashAnimation 1s linear infinite;
+/* Custom Div Icon for Map Markers */
+.custom-div-icon {
+    background: transparent;
+    border: none;
 }
-@keyframes dashAnimation {
-  from { stroke-dashoffset: 20; }
-  to { stroke-dashoffset: 0; }
-}
-
-/* Leaflet Customizations for Dark Mode popup */
 .leaflet-popup-content-wrapper {
-  background: #1e293b !important;
-  color: #f8fafc !important;
-  border-radius: 8px !important;
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    backdrop-filter: blur(8px);
+    color: #e2e8f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
 }
 .leaflet-popup-tip {
-  background: #1e293b !important;
+    background-color: rgba(15, 23, 42, 0.9) !important;
 }
 
-/* Base styles for proper stacking */
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background-color: #0f172a;
+/* Animated Path Drawing */
+.animated-path {
+    stroke-dasharray: 20, 20;
+    animation: dash-anim 20s linear infinite;
+    filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.8));
+}
+@keyframes dash-anim {
+    from {
+        stroke-dashoffset: 400;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
