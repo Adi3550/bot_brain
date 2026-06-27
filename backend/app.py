@@ -9,7 +9,8 @@ import random
 
 load_dotenv()
 
-app = Flask(__name__)
+# Point Flask to the frontend folder to serve HTML/CSS
+app = Flask(__name__, static_folder='../frontend', static_url_path='/')
 CORS(app)
 
 # Configure Gemini API
@@ -239,6 +240,10 @@ def chatbot():
         return jsonify({"reply": response.text.strip()})
     except Exception as e:
         return jsonify({"reply": f"Sorry, my AI brain encountered an error: {str(e)}"}), 500
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
