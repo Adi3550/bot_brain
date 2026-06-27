@@ -217,24 +217,48 @@ def chatbot():
     data = request.get_json()
     message = data.get("message", "")
     
-    if not model:
-        return jsonify({"reply": "AI Chatbot is currently unavailable (Missing GEMINI_API_KEY). But I can tell you we have a beautiful campus!"})
-    
-    prompt = f"""
-    You are BotBrain, the official AI navigator for our campus. Be friendly, concise, and helpful.
-    Here is the campus information:
-    Buildings: {', '.join(locations for locations in graph.keys())}.
-    Building Details: {building_info}
-    Events Today: Library (Lecture at 4 PM), Sports Ground (Cricket match), Auditorium (Tech Symposium), Canteen (20% off beverages).
-    
-    User message: {message}
-    """
-    
-    try:
-        response = model.generate_content(prompt)
-        return jsonify({"reply": response.text.strip()})
-    except Exception as e:
-        return jsonify({"reply": f"Sorry, my AI brain encountered an error: {str(e)}"}), 500
+    def rule_based_chat(msg):
+        msg = msg.lower()
+        if "event" in msg or "happening" in msg:
+            return "Here are today's events: Library (Lecture at 4 PM), Sports Ground (Cricket match), Auditorium (Tech Symposium), Canteen (20% off beverages)."
+        
+        for building, info in building_info.items():
+            if building.lower() in msg:
+                if "hour" in msg or "time" in msg or "open" in msg:
+                    return f"The {building} is open: {info['hours']}."
+                return f"The {building} is a {info['type']} building. Services: {info['services']}. Hours: {info['hours']}."
+                
+        if "food" in msg or "eat" in msg or "hungry" in msg:
+            return f"You can get food at the Canteen! It is open: {building_info['Canteen']['hours']}."
+            
+        if "sick" in msg or "doctor" in msg or "hospital" in msg:
+            return f"Please visit the Medical Center! Services: {building_info['Medical Center']['services']}."
+            
+        if "hi" in msg or "hello" in msg or "hey" in msg:
+            return "Hi there! I'm BotBrain. I can help you find campus locations, events, and building hours!"
+            
+        return "I'm currently running in Backup Offline Mode. I can help you with building hours, events, and food locations! Try asking 'What are the library hours?' or 'Any events today?'"
+
+    # Try Gemini API first
+    if model:
+        prompt = f"""
+        You are BotBrain, the official AI navigator for our campus. Be friendly, concise, and helpful.
+        Here is the campus information:
+        Buildings: {', '.join(locations for locations in graph.keys())}.
+        Building Details: {building_info}
+        Events Today: Library (Lecture at 4 PM), Sports Ground (Cricket match), Auditorium (Tech Symposium), Canteen (20% off beverages).
+        
+        User message: {message}
+        """
+        try:
+            response = model.generate_content(prompt)
+            return jsonify({"reply": response.text.strip()})
+        except Exception as e:
+            # If Gemini fails (e.g. 404 error, quota exceeded), fallback to rules
+            return jsonify({"reply": rule_based_chat(message)})
+    else:
+        # If no API key is provided, use rules immediately
+        return jsonify({"reply": rule_based_chat(message)})
 
 @app.route('/')
 def index():
