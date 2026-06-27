@@ -24,7 +24,7 @@
         }
     </script>
 </head>
-<body class="bg-darkBg text-slate-200 h-screen flex flex-col font-sans overflow-hidden">
+<body class="bg-darkBg text-slate-200 h-[100dvh] flex flex-col font-sans overflow-hidden">
 
     <!-- Navbar -->
     <header class="bg-darkPanel border-b border-slate-700 p-4 flex justify-between items-center z-10 shrink-0">
@@ -41,10 +41,10 @@
     </header>
 
     <!-- Main Layout -->
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
+    <main class="flex-1 flex flex-col-reverse md:flex-row overflow-hidden">
         
         <!-- Sidebar -->
-        <aside class="w-full md:w-96 bg-darkPanel flex flex-col border-r border-slate-700 shrink-0 overflow-y-auto">
+        <aside class="w-full md:w-96 bg-darkPanel flex flex-col border-r border-slate-700 shrink-0 overflow-y-auto max-h-[50vh] md:max-h-full md:h-full">
             
             <!-- Pathfinding Section -->
             <div class="p-4 border-b border-slate-700">
@@ -109,7 +109,7 @@
         </aside>
 
         <!-- Map Area -->
-        <section class="flex-1 flex flex-col relative h-[50vh] md:h-auto">
+        <section class="flex-1 flex flex-col relative h-[50vh] md:h-auto shrink-0 md:shrink">
             <div id="map" class="flex-1 z-0"></div>
             
             <!-- Turn-by-Turn Directions Floating Panel -->
