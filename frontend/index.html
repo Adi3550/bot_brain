@@ -161,6 +161,20 @@
                 subdomains: ['mt0','mt1','mt2','mt3']
             }).addTo(map);
 
+            // DEV TOOL: Click on the map to copy exact coordinates!
+            map.on('click', function(e) {
+                const lat = e.latlng.lat.toFixed(6);
+                const lng = e.latlng.lng.toFixed(6);
+                const coords = `${lat}, ${lng}`;
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(coords).then(() => {
+                    alert(`Coordinates copied to clipboard!\n\n${coords}\n\nYou can paste these to the AI!`);
+                }).catch(err => {
+                    alert(`Coordinates: ${coords}`);
+                });
+            });
+
             fetchLocations();
         }
 
