@@ -23,50 +23,47 @@ else:
 
 # Unified Graph
 graph = {
-    "Main Gate": {"Admin Block": 160},
-    "Admin Block": {"Main Gate": 160, "Library": 60, "Student Center": 60},
-    "Library": {"Admin Block": 60},
-    "Student Center": {"Admin Block": 60, "Academic Block A": 60, "Academic Block B": 60, "Academic Block C": 60},
-    "Academic Block A": {"Student Center": 60},
-    "Academic Block C": {"Student Center": 60},
-    "Academic Block B": {"Student Center": 60, "Canteen": 180},
-    "Canteen": {"Academic Block B": 180, "Main Hostel": 70, "Sports Complex": 220},
-    "Main Hostel": {"Canteen": 70, "Medical Center": 220, "Auditorium": 500},
-    "Medical Center": {"Main Hostel": 220},
-    "Sports Complex": {"Canteen": 220},
-    "Auditorium": {"Main Hostel": 500}
+    "Main Gate": {"Admin Block": 320},
+    "Admin Block": {"Main Gate": 320, "Library": 10, "Auditorium": 10, "Academic Block B": 300, "Academic Block C": 370, "Academic Block D": 400},
+    "Library": {"Admin Block": 10},
+    "Auditorium": {"Admin Block": 10},
+    "Academic Block B": {"Admin Block": 300},
+    "Academic Block C": {"Admin Block": 370, "Canteen": 120, "Main Hostel": 200},
+    "Academic Block D": {"Admin Block": 400},
+    "Canteen": {"Academic Block C": 120, "Medical Center": 10, "Main Hostel": 170, "Sports Ground": 510},
+    "Medical Center": {"Canteen": 10},
+    "Main Hostel": {"Canteen": 170, "Academic Block C": 200},
+    "Sports Ground": {"Canteen": 510}
 }
 
 base_lat = 13.2246
 base_lng = 77.7578
 coordinates = {
-    "Main Gate": (base_lat, base_lng),
-    "Admin Block": (base_lat - 0.00160, base_lng),
-    "Library": (base_lat - 0.00160, base_lng + 0.00060),
-    "Student Center": (base_lat - 0.00220, base_lng),
-    "Academic Block A": (base_lat - 0.00220, base_lng - 0.00060),
-    "Academic Block C": (base_lat - 0.00220, base_lng + 0.00060),
-    "Academic Block B": (base_lat - 0.00280, base_lng),
-    "Canteen": (base_lat - 0.00460, base_lng),
-    "Main Hostel": (base_lat - 0.00460, base_lng - 0.00070),
-    "Medical Center": (base_lat - 0.00460, base_lng - 0.00290),
-    "Sports Complex": (base_lat - 0.00460, base_lng + 0.00220),
-    "Auditorium": (base_lat - 0.00960, base_lng - 0.00070)
+    "Main Gate": (base_lat - 0.0020, base_lng - 0.0025),
+    "Admin Block": (base_lat + 0.0005, base_lng - 0.0015),
+    "Library": (base_lat + 0.0006, base_lng - 0.0015),
+    "Auditorium": (base_lat + 0.0004, base_lng - 0.0015),
+    "Academic Block B": (base_lat + 0.0010, base_lng - 0.0040),
+    "Academic Block C": (base_lat + 0.0015, base_lng + 0.0015),
+    "Academic Block D": (base_lat - 0.0010, base_lng + 0.0020),
+    "Canteen": (base_lat + 0.0025, base_lng + 0.0010),
+    "Medical Center": (base_lat + 0.0026, base_lng + 0.0010),
+    "Main Hostel": (base_lat + 0.0020, base_lng + 0.0025),
+    "Sports Ground": (base_lat + 0.0050, base_lng - 0.0010)
 }
 
 building_info = {
-    "Library": {"type": "Academic", "hours": "8 AM - 10 PM", "services": "Books, study rooms"},
-    "Admin Block": {"type": "Admin", "hours": "9 AM - 5 PM", "services": "Office work"},
-    "Main Hostel": {"type": "Residential", "hours": "24/7", "services": "Rooms"},
-    "Canteen": {"type": "Service", "hours": "7 AM - 10 PM", "services": "Food"},
-    "Sports Complex": {"type": "Sports", "hours": "6 AM - 8 PM", "services": "Sports"},
-    "Academic Block A": {"type": "Academic", "hours": "8 AM - 6 PM", "services": "Classes"},
-    "Academic Block B": {"type": "Academic", "hours": "8 AM - 6 PM", "services": "Classes"},
-    "Academic Block C": {"type": "Academic", "hours": "8 AM - 6 PM", "services": "Classes"},
-    "Main Gate": {"type": "Entry", "hours": "24/7", "services": "Security"},
-    "Medical Center": {"type": "Service", "hours": "24/7", "services": "Health"},
-    "Auditorium": {"type": "Academic", "hours": "8 AM - 10 PM", "services": "Events"},
-    "Student Center": {"type": "Service", "hours": "8 AM - 8 PM", "services": "Activities"}
+    "Main Gate": {"type": "Entry", "hours": "24/7", "services": "Security, Campus Map"},
+    "Admin Block": {"type": "Admin", "hours": "9 AM - 5 PM", "services": "Admissions, Finance, Offices"},
+    "Library": {"type": "Academic", "hours": "8 AM - 10 PM", "services": "Books, Study Rooms, Computers"},
+    "Auditorium": {"type": "Academic", "hours": "Event Based", "services": "Events, Seminars, Workshops"},
+    "Academic Block B": {"type": "Academic", "hours": "Under Construction", "services": "Future Classrooms"},
+    "Academic Block C": {"type": "Academic", "hours": "8 AM - 6 PM", "services": "Classrooms, Labs, Faculty Cabins"},
+    "Academic Block D": {"type": "Academic", "hours": "Under Construction", "services": "Future Classrooms"},
+    "Main Hostel": {"type": "Residential", "hours": "24/7", "services": "Accommodation, Common Room"},
+    "Canteen": {"type": "Service", "hours": "7 AM - 9 PM", "services": "Food Court, Beverages, Snacks"},
+    "Medical Center": {"type": "Service", "hours": "24/7", "services": "First Aid, Doctor on Call, Pharmacy"},
+    "Sports Ground": {"type": "Sports", "hours": "6 AM - 8 PM", "services": "Cricket Pitch, Running Track, Pavilion"}
 }
 
 def calculate_heuristic(start, goal):
@@ -172,7 +169,7 @@ def get_locations():
 def get_events():
     events_mock = {
         "Library": "Guest lecture at 4 PM in Hall A.",
-        "Sports Complex": "Inter-college basketball match ongoing.",
+        "Sports Ground": "Inter-college cricket match ongoing.",
         "Auditorium": "Tech Symposium 2026 Registration open.",
         "Canteen": "Special menu: 20% off all beverages today!"
     }
@@ -230,7 +227,7 @@ def chatbot():
     Here is the campus information:
     Buildings: {', '.join(locations for locations in graph.keys())}.
     Building Details: {building_info}
-    Events Today: Library (Lecture at 4 PM), Sports Complex (Basketball match), Auditorium (Tech Symposium), Canteen (20% off beverages).
+    Events Today: Library (Lecture at 4 PM), Sports Ground (Cricket match), Auditorium (Tech Symposium), Canteen (20% off beverages).
     
     User message: {message}
     """
